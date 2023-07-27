@@ -1,12 +1,14 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.optimize import differential_evolution
+import os
 
 
-def simulate_model(params):
+def simulate_model(params, *args):
 
     # simulation params
-    n_trials = 100
+    n_trials = args[2]
     n_steps = 2000
 
     # init params
@@ -26,7 +28,6 @@ def simulate_model(params):
     for i in range(n_trials):
         for j in range(1, n_steps):
 
-            # TODO: is this okay?
             if j > ndt:
 
                 # TODO: remind ourselves v_mean vs v_sd
@@ -35,12 +36,12 @@ def simulate_model(params):
 
                 # make a response if a threshold is crossed
                 if evidence[i, j] > a:
-                    r_choice[i] = 1
+                    r_choice[i] = 0
                     r_time[i] = j
                     break
 
                 if evidence[i, j] < -a:
-                    r_choice[i] = 2
+                    r_choice[i] = 1
                     r_time[i] = j
                     break
 
@@ -61,17 +62,21 @@ def obj_func(params, *args):
     '''
 
     # simnulate the model
-    r_choice_pred, r_time_pred = simulate_model(params)
+    r_choice_pred, rt_pred = simulate_model(params, *args)
 
-    # TODO: need trial-by-trial choice and rt data from a target participant
     r_choice_obs = args[0]
-    r_time_obs = args[1]
+    rt_obs = args[1] * 1000
 
+    # NOTE: should cost factor in correct vs incorrect
+    sse_choice = (np.nanmean(r_choice_pred) - np.nanmean(r_choice_obs))**2
+    sse_rt = (np.nanmean(rt_pred) - np.nanmean(rt_obs))**2
+
+    # NOTE: left in just to think about if we ever want trial order to matter
     # compare against objective
-    sse_choice = np.sum((r_choice_pred - r_choice_obs)**2)
-    sse_time = np.sum((r_time_pred - r_time_obs)**2)
+    # sse_choice = np.sum((r_choice_pred - r_choice_obs)**2)
+    # sse_rt = np.sum((rt_pred - rt_obs)**2)
 
-    sse = sse_choice + sse_time
+    sse = sse_choice + sse_rt
 
     return sse
 
@@ -86,20 +91,73 @@ def fit_model():
 
     params = (v_mean, v_sd, a, z, ndt)
 
-    r_choice_obj, r_time_obj = simulate_model(params)
-    args = (r_choice_obj, r_time_obj)
+    dir_data = '../data_Stroop_PRmanipulation/'
+    d = pd.read_csv(dir_data + '2response_trimmed_combined.csv')
 
-    # TODO: choose reasonable values for bounds
-    bounds = [(0, 1), (0, 5), (0, 1000), (-a * 0.9, a * 0.9), (0, 500)]
+    for s in d['participant'].unique():
+        for c in d['Congruency'].unique():
 
-    # search parameter space and find the best set of params
-    result = differential_evolution(obj_func,
-                                    bounds,
-                                    args,
-                                    tol=1e-5,
-                                    disp=True)
+            print(s, c)
 
-    print(result.x, result.fun)
+            dd = d.loc[(d['participant'] == s) & (d['Congruency'] == c)]
+
+            n_trials = dd.shape[0]
+
+            r_choice_obj = dd['Correct'].to_numpy()
+            r_time_obj = dd['RT'].to_numpy()
+            args = (r_choice_obj, r_time_obj, n_trials)
+
+            # TODO: choose reasonable values for bounds
+            bounds = [(0, 1), (0, 5), (0, 1000), (-a * 0.9, a * 0.9), (0, 500)]
+
+            # search parameter space and find the best set of params
+            result = differential_evolution(
+                obj_func,
+                bounds,
+                args,
+                tol=1e1,
+                maxiter=10,
+                polish=False,
+                # updating='deferred',
+                # workers=-1,
+                disp=True)
+
+            print(result.x, result.fun)
+
+            fout = '../fits/ppt_' + str(s) + '_congruency_' + c + '.txt'
+            with open(fout, 'w') as f:
+                tmp = np.concatenate((result['x'], [result['fun']]))
+                tmp = np.reshape(tmp, (tmp.shape[0], 1))
+                np.savetxt(f, tmp.T, '%0.4f', delimiter=',', newline='\n')
+
+
+def inspect_fits():
+
+    dir_fit = '../fits/'
+
+    v_mean = []
+    v_sd = []
+    a = []
+    z = []
+    ndt = []
+    params = []
+    condition = []
+    for f in os.listdir(dir_fit):
+        if f.endswith('.txt'):
+            d = np.loadtxt(dir_fit + f, delimiter=',')
+            v_mean.append(d[0])
+            v_sd.append(d[1])
+            a.append(d[2])
+            z.append(d[3])
+            ndt.append(d[4])
+            params.append(d[5])
+
+            # TODO: be less tired.
+            # if my_string.lower().find("sample")
+            # f.contains('Incongruent'):
+            #     condition.append('incongruent')
+            # else:
+            #     condition.append('congruent')
 
 
 fit_model()
