@@ -90,7 +90,7 @@ def fit_model():
     z = 0.5  # starting point
     ndt = 200  # nondecision time
 
-    params = (v_mean, v_sd, a, z, ndt, value)
+    params = (v_mean, v_sd, a, z, ndt)
 
     dir_data = '../data_Stroop_PRmanipulation/'
     d = pd.read_csv(dir_data + '2response_trimmed_combined.csv')
@@ -98,7 +98,7 @@ def fit_model():
     loop_output = []
     dir_output = '../fits/'
     csv_file_path = os.path.join(dir_output, 'loop_output.csv') #name of the loop output file and path
-    header_row = ['participant', 'congruency', 'v_mean', 'v_sd', 'a', 'z', 'ndt'] #create the heading names
+    header_row = ['participant', 'congruency', 'v_mean', 'v_sd', 'a', 'z', 'ndt', 'value'] #create the heading names
 
     # Writing loop_output to a CSV file. This first one creates the files and add the header rows above
     with open(csv_file_path, 'a', newline='') as csvfile:
