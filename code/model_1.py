@@ -1,9 +1,11 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 from scipy.optimize import differential_evolution
 import os
 import csv
+from itertools import product
 
 
 def simulate_model(params, *args):
@@ -28,7 +30,7 @@ def simulate_model(params, *args):
     for i in range(n_trials):
         for j in range(1, n_steps):
             if j > ndt:
-                # TODO: remind ourselves v_mean vs v_sd
+                # accumulate new evidence
                 new_evidence = np.random.normal(v_mean, v_sd)
                 evidence[i, j] = evidence[i, j - 1] + new_evidence
 
@@ -80,35 +82,31 @@ def obj_func(params, *args):
 
 
 def fit_model():
-    v_mean = 0.1  # drift rate
-    v_sd = 2.0  # drift rate
-    a = 100.0  # threshold
-    z = 0.5  # starting point
-    ndt = 200  # nondecision time
-
-    params = (v_mean, v_sd, a, z, ndt)
-
-main
-    dir_data = '../data_Stroop_PRmanipulation/'
-    d = pd.read_csv(dir_data + '2response_trimmed_combined.csv')
-
-    loop_output = []
-    dir_output = '../fits/'
-    csv_file_path = os.path.join(dir_output, 'loop_output.csv') #name of the loop output file and path
-    header_row = ['participant', 'congruency', 'v_mean', 'v_sd', 'a', 'z', 'ndt', 'value'] #create the heading names
-
-    # Writing loop_output to a CSV file. This first one creates the files and add the header rows above
-    with open(csv_file_path, 'a', newline='') as csvfile:
-        csv_writer = csv.writer(csvfile)
-        csv_writer.writerow(header_row)
-
-
-    for s in d['participant'].unique():
-        for c in d['Congruency'].unique():
 
     dir_data = "../data_Stroop_PRmanipulation/"
     d = pd.read_csv(dir_data + "2response_trimmed_combined.csv")
- main
+
+    loop_output = []
+    dir_output = "../fits/"
+    csv_file_path = os.path.join(
+        dir_output, "loop_output.csv"
+    )  # name of the loop output file and path
+
+    header_row = [
+        "participant",
+        "congruency",
+        "v_mean",
+        "v_sd",
+        "a",
+        "z",
+        "ndt",
+        "value",
+    ]  # create the heading names
+
+    # Writing loop_output to a CSV file. This first one creates the files and add the header rows above
+    with open(csv_file_path, "a", newline="") as csvfile:
+        csv_writer = csv.writer(csvfile)
+        csv_writer.writerow(header_row)
 
     for s in d["participant"].unique():
         for c in d["Congruency"].unique():
@@ -139,96 +137,68 @@ main
             )
 
             print(result.x, result.fun)
-            loop_output = np.concatenate((result['x'], [result['fun']]))
-            
+            loop_output = np.concatenate((result["x"], [result["fun"]]))
 
-    # Writing loop_output to a CSV file
-            with open(csv_file_path, 'a', newline='') as csvfile:
+            # Writing loop_output to a CSV file
+            with open(csv_file_path, "a", newline="") as csvfile:
                 csv_writer = csv.writer(csvfile)
-                #csv_writer.writerow(header_row)
+                # csv_writer.writerow(header_row)
 
- main
-                 # Writing data into each row with multiple columns
+                # Writing data into each row with multiple columns
                 for i in range(1):
-                    row_data = [s,c, loop_output[0], loop_output[1], loop_output[2], loop_output[3], loop_output[4], loop_output[5]]
+                    row_data = [
+                        s,
+                        c,
+                        loop_output[0],
+                        loop_output[1],
+                        loop_output[2],
+                        loop_output[3],
+                        loop_output[4],
+                        loop_output[5],
+                    ]
                     csv_writer.writerow(row_data)
 
 
-                
-                #for item in loop_output:
-                    #csv_writer.writecol([item])
-
-            #fout = '../fits/ppt_' + str(s) + '_congruency_' + c + '.txt'
-            #with open(fout, 'w') as f:
-                #tmp = np.concatenate((result['x'], [result['fun']]))
-                #tmp = np.reshape(tmp, (tmp.shape[0], 1))
-                #np.savetxt(f, tmp.T, '%0.4f', delimiter=',', newline='\n')
-
-
 def inspect_fits():
+    d = pd.read_csv("../fits/loop_output.csv")
 
-    dir_fit = '../fits/'
-    d_data = pd.read_csv(dir_fit + 'loop_output.csv')
+    dd = d.groupby(["congruency"])[["v_mean", "v_sd", "a", "z", "ndt"]].mean()
 
-    grouped_data = d_data.groupby('congruency').mean() #this groups the data by congruency and calculates the mean for each group
-    grouped_data.to_csv(dir_fit + 'means_output.csv')
-    
-
-    #v_mean = []
-    #v_sd = []
-    #a = []
-    #z = []
-    #ndt = []
-    #params = []
-    #condition = []
-    #for f in os.listdir(dir_fit):
-        #if f.endswith('.txt'):
-            #d = np.loadtxt(dir_fit + f, delimiter=',')
-            #v_mean.append(d[0])
-            #v_sd.append(d[1])
-            #a.append(d[2])
-            #z.append(d[3])
-            #ndt.append(d[4])
-            #params.append(d[5])
-
-            fout = "../fits/ppt_" + str(s) + "_congruency_" + c + ".txt"
-            with open(fout, "w") as f:
-                tmp = np.concatenate((result["x"], [result["fun"]]))
-                tmp = np.reshape(tmp, (tmp.shape[0], 1))
-                np.savetxt(f, tmp.T, "%0.4f", delimiter=",", newline="\n")
+    fig, ax = plt.subplots(1, 5, squeeze=False)
+    sns.barplot(data=dd, x=dd.index, y="v_mean", ax=ax[0, 0])
+    sns.barplot(data=dd, x=dd.index, y="v_sd", ax=ax[0, 1])
+    sns.barplot(data=dd, x=dd.index, y="a", ax=ax[0, 2])
+    sns.barplot(data=dd, x=dd.index, y="z", ax=ax[0, 3])
+    sns.barplot(data=dd, x=dd.index, y="ndt", ax=ax[0, 4])
+    plt.show()
 
 
-def inspect_fits():
-    dir_fit = "../fits/"
+def fit_validate():
+    # set up a grid of parameter values we are interested in exploring
+    a = 100
+    bounds = [
+        np.arange(0, 1, 0.1),
+        np.arange(0, 5, 1),
+        np.arange(0, 1000, 1),
+        np.arange(-a * 0.9, a * 0.9, 1),
+        np.arange(0, 500, 10)]
 
-    v_mean = []
-    v_sd = []
-    a = []
-    z = []
-    ndt = []
-    params = []
-    condition = []
-    for f in os.listdir(dir_fit):
-        if f.endswith(".txt"):
-            d = np.loadtxt(dir_fit + f, delimiter=",")
-            v_mean.append(d[0])
-            v_sd.append(d[1])
-            a.append(d[2])
-            z.append(d[3])
-            ndt.append(d[4])
-            params.append(d[5])
- main
+    param_combinations = list(product(*bounds))
 
-            # TODO: be less tired.
-            # if my_string.lower().find("sample")
-            # f.contains('Incongruent'):
-            #     condition.append('incongruent')
-            # else:
-            #     condition.append('congruent')
+    # iterate through the grid
+    for p in param_combinations:
+        # TODO within each iteration simulate data
+        # obs = simulate_model(params, *args)
+
+        # TODO package obs in a way that the fit routine can work with
+
+        # TODO fit the simulated data and see if input params are recovered
+
+        pass
 
 
-fit_model()
-inspect_fits()
+# fit_model()
+# inspect_fits()
 
 # v_mean = 0.1  # drift rate
 # v_sd = 2.0  # drift rate
