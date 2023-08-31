@@ -258,7 +258,6 @@ def fit_validate():
                     csv_writer.writerow(row_data)
              
 
-
 fit_validate()
 # fit_model()
 # inspect_fits()
