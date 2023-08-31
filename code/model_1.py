@@ -45,7 +45,7 @@ def simulate_model(params, *args):
                     r_time[i] = j
                     break
 
-    #fig, ax = plt.subplots(1, 1, squeeze=False)
+    # fig, ax = plt.subplots(1, 1, squeeze=False)
     # ax[0, 0].plot([0, n_steps], [a, a], '--k')
     # ax[0, 0].plot([0, n_steps], [-a, -a], '--k')
     # ax[0, 0].plot(t, evidence[0, :])
@@ -82,7 +82,6 @@ def obj_func(params, *args):
 
 
 def fit_model():
-
     dir_data = "../data_Stroop_PRmanipulation/"
     d = pd.read_csv(dir_data + "2response_trimmed_combined.csv")
 
@@ -111,18 +110,18 @@ def fit_model():
         for s in d["participant"].unique():
             for c in d["Congruency"].unique():
                 print(s, c)
-    
+
                 dd = d.loc[(d["participant"] == s) & (d["Congruency"] == c)]
-    
+
                 n_trials = dd.shape[0]
-    
+
                 r_choice_obj = dd["Correct"].to_numpy()
                 r_time_obj = dd["RT"].to_numpy()
                 args = (r_choice_obj, r_time_obj, n_trials)
-    
+
                 # TODO: choose reasonable values for bounds
                 bounds = [(0, 1), (0, 5), (0, 1000), (-a * 0.9, a * 0.9), (0, 500)]
-    
+
                 # search parameter space and find the best set of params
                 result = differential_evolution(
                     obj_func,
@@ -135,15 +134,14 @@ def fit_model():
                     # workers=-1,
                     disp=True,
                 )
-    
+
                 print(result.x, result.fun)
                 loop_output = np.concatenate((result["x"], [result["fun"]]))
-    
+
                 # Writing loop_output to a CSV file
                 with open(csv_file_path, "a", newline="") as csvfile:
                     csv_writer = csv.writer(csvfile)
-                    
-    
+
                     # Writing data into each row with multiple columns
                     for i in range(1):
                         row_data = [
@@ -174,17 +172,21 @@ def inspect_fits():
 
 
 def fit_validate():
+
     # set up a grid of parameter values we are interested in exploring
-    a = 100
-    
+    a = 1
+
     bounds = [
-        np.arange(0, 1, 0.1),
-        np.arange(0, 5, 1),
-        np.arange(0, 1000, 1),
-        np.arange(-a * 0.9, a * 0.9, 1),
-        np.arange(0, 500, 10)]
+        np.arange(0, 1, 0.4), # v_mean
+        np.arange(0, 1, 0.4), # v_sd
+        np.arange(0, 1, 100), # a
+        np.arange(-a * 0.9, a * 0.9, 1), # z
+        np.arange(0, 300, 100), # ndt
+    ]
 
     param_combinations = list(product(*bounds))
+
+    print(len(param_combinations))
 
     loop_output = []
     dir_output = "../sim/"
@@ -205,8 +207,8 @@ def fit_validate():
         "z",
         "ndt",
     ]  # create the heading names
-    
-    #I just want it to create the header_row one time...
+
+    # I just want it to create the header_row one time...
     with open(csv_file_path, "a", newline="") as csvfile:
         csv_writer = csv.writer(csvfile)
         csv_writer.writerow(header_row)
@@ -214,37 +216,36 @@ def fit_validate():
     # Writing loop_output to a CSV file. This first one creates the files and add the header rows above
     with open(csv_file_path, "a", newline="") as csvfile:
         csv_writer = csv.writer(csvfile)
-    
+
         for p in param_combinations:
-    
             print(p)
             n_trials = 150
-            args = ([],[],n_trials)
+            args = ([], [], n_trials)
             r_choice_pred, rt_pred = simulate_model(p, *args)
             args = (r_choice_pred, rt_pred, n_trials)
-       
+
             bounds = [(0, 1), (0, 5), (0, 1000), (-a * 0.9, a * 0.9), (0, 500)]
-    
-             # search parameter space and find the best set of params
+
+            # search parameter space and find the best set of params
             result = differential_evolution(
-                 obj_func,
-                 bounds,
-                 args,
-                 tol=1e1,
-                 maxiter=10,
-                 polish=False,
-                 # updating='deferred',
-                 # workers=-1,
-                 disp=True,)  
-             
-             
+                obj_func,
+                bounds,
+                args,
+                tol=1e1,
+                maxiter=10,
+                polish=False,
+                # updating='deferred',
+                # workers=-1,
+                disp=True,
+            )
+
             print(result.x, result.fun)
             loop_output = np.concatenate((result["x"], [result["fun"]]))
-    
+
             # Writing loop_output to a CSV file
             with open(csv_file_path, "a", newline="") as csvfile:
                 csv_writer = csv.writer(csvfile)
-    
+
                 # Writing data into each row with multiple columns
                 for i in range(1):
                     row_data = [
@@ -253,12 +254,31 @@ def fit_validate():
                         loop_output[2],
                         loop_output[3],
                         loop_output[4],
-                        loop_output[5],p[0],p[1],p[2],p[3],p[4]
+                        loop_output[5],
+                        p[0],
+                        p[1],
+                        p[2],
+                        p[3],
+                        p[4],
                     ]
                     csv_writer.writerow(row_data)
-             
 
-fit_validate()
+
+def inspect_validate():
+
+    d = pd.read_csv("../sim/sim_output.csv")
+
+#    fig, ax = plt.subplots(2, 3, squeeze=False, figsize=(10, 6))
+#    ax[0, 0].scatter(d["v_mean"], d["v_mean_recovered"])
+#    ax[0, 1].scatter(d["v_sd"], d["v_sd_recovered"])
+#    ax[0, 2].scatter(d["a"], d["a_recovered"])
+#    ax[1, 0].scatter(d["z"], d["z_recovered"])
+#    ax[1, 1].scatter(d["ndt"], d["ndt_recovered"])
+#    plt.tight_layout()
+#    plt.show()
+
+# fit_validate()
+inspect_validate()
 # fit_model()
 # inspect_fits()
 
