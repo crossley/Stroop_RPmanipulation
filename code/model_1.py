@@ -45,7 +45,7 @@ def simulate_model(params, *args):
                     r_time[i] = j
                     break
 
-    # fig, ax = plt.subplots(1, 1, squeeze=False)
+    #fig, ax = plt.subplots(1, 1, squeeze=False)
     # ax[0, 0].plot([0, n_steps], [a, a], '--k')
     # ax[0, 0].plot([0, n_steps], [-a, -a], '--k')
     # ax[0, 0].plot(t, evidence[0, :])
@@ -108,55 +108,55 @@ def fit_model():
         csv_writer = csv.writer(csvfile)
         csv_writer.writerow(header_row)
 
-    for s in d["participant"].unique():
-        for c in d["Congruency"].unique():
-            print(s, c)
-
-            dd = d.loc[(d["participant"] == s) & (d["Congruency"] == c)]
-
-            n_trials = dd.shape[0]
-
-            r_choice_obj = dd["Correct"].to_numpy()
-            r_time_obj = dd["RT"].to_numpy()
-            args = (r_choice_obj, r_time_obj, n_trials)
-
-            # TODO: choose reasonable values for bounds
-            bounds = [(0, 1), (0, 5), (0, 1000), (-a * 0.9, a * 0.9), (0, 500)]
-
-            # search parameter space and find the best set of params
-            result = differential_evolution(
-                obj_func,
-                bounds,
-                args,
-                tol=1e1,
-                maxiter=10,
-                polish=False,
-                # updating='deferred',
-                # workers=-1,
-                disp=True,
-            )
-
-            print(result.x, result.fun)
-            loop_output = np.concatenate((result["x"], [result["fun"]]))
-
-            # Writing loop_output to a CSV file
-            with open(csv_file_path, "a", newline="") as csvfile:
-                csv_writer = csv.writer(csvfile)
-                # csv_writer.writerow(header_row)
-
-                # Writing data into each row with multiple columns
-                for i in range(1):
-                    row_data = [
-                        s,
-                        c,
-                        loop_output[0],
-                        loop_output[1],
-                        loop_output[2],
-                        loop_output[3],
-                        loop_output[4],
-                        loop_output[5],
-                    ]
-                    csv_writer.writerow(row_data)
+        for s in d["participant"].unique():
+            for c in d["Congruency"].unique():
+                print(s, c)
+    
+                dd = d.loc[(d["participant"] == s) & (d["Congruency"] == c)]
+    
+                n_trials = dd.shape[0]
+    
+                r_choice_obj = dd["Correct"].to_numpy()
+                r_time_obj = dd["RT"].to_numpy()
+                args = (r_choice_obj, r_time_obj, n_trials)
+    
+                # TODO: choose reasonable values for bounds
+                bounds = [(0, 1), (0, 5), (0, 1000), (-a * 0.9, a * 0.9), (0, 500)]
+    
+                # search parameter space and find the best set of params
+                result = differential_evolution(
+                    obj_func,
+                    bounds,
+                    args,
+                    tol=1e1,
+                    maxiter=10,
+                    polish=False,
+                    # updating='deferred',
+                    # workers=-1,
+                    disp=True,
+                )
+    
+                print(result.x, result.fun)
+                loop_output = np.concatenate((result["x"], [result["fun"]]))
+    
+                # Writing loop_output to a CSV file
+                with open(csv_file_path, "a", newline="") as csvfile:
+                    csv_writer = csv.writer(csvfile)
+                    
+    
+                    # Writing data into each row with multiple columns
+                    for i in range(1):
+                        row_data = [
+                            s,
+                            c,
+                            loop_output[0],
+                            loop_output[1],
+                            loop_output[2],
+                            loop_output[3],
+                            loop_output[4],
+                            loop_output[5],
+                        ]
+                        csv_writer.writerow(row_data)
 
 
 def inspect_fits():
@@ -176,6 +176,7 @@ def inspect_fits():
 def fit_validate():
     # set up a grid of parameter values we are interested in exploring
     a = 100
+    
     bounds = [
         np.arange(0, 1, 0.1),
         np.arange(0, 5, 1),
@@ -185,18 +186,80 @@ def fit_validate():
 
     param_combinations = list(product(*bounds))
 
-    # iterate through the grid
-    for p in param_combinations:
-        # TODO within each iteration simulate data
-        # obs = simulate_model(params, *args)
+    loop_output = []
+    dir_output = "../sim/"
+    csv_file_path = os.path.join(
+        dir_output, "sim_output.csv"
+    )  # name of the loop output file and path
 
-        # TODO package obs in a way that the fit routine can work with
+    header_row = [
+        "v_mean_recovered",
+        "v_sd_recovered",
+        "a_recovered",
+        "z_recovered",
+        "ndt_recovered",
+        "value_recovered",
+        "v_mean",
+        "v_sd",
+        "a",
+        "z",
+        "ndt",
+    ]  # create the heading names
+    
+    #I just want it to create the header_row one time...
+    with open(csv_file_path, "a", newline="") as csvfile:
+        csv_writer = csv.writer(csvfile)
+        csv_writer.writerow(header_row)
 
-        # TODO fit the simulated data and see if input params are recovered
+    # Writing loop_output to a CSV file. This first one creates the files and add the header rows above
+    with open(csv_file_path, "a", newline="") as csvfile:
+        csv_writer = csv.writer(csvfile)
+    
+        for p in param_combinations:
+    
+            print(p)
+            n_trials = 150
+            args = ([],[],n_trials)
+            r_choice_pred, rt_pred = simulate_model(p, *args)
+            args = (r_choice_pred, rt_pred, n_trials)
+       
+            bounds = [(0, 1), (0, 5), (0, 1000), (-a * 0.9, a * 0.9), (0, 500)]
+    
+             # search parameter space and find the best set of params
+            result = differential_evolution(
+                 obj_func,
+                 bounds,
+                 args,
+                 tol=1e1,
+                 maxiter=10,
+                 polish=False,
+                 # updating='deferred',
+                 # workers=-1,
+                 disp=True,)  
+             
+             
+            print(result.x, result.fun)
+            loop_output = np.concatenate((result["x"], [result["fun"]]))
+    
+            # Writing loop_output to a CSV file
+            with open(csv_file_path, "a", newline="") as csvfile:
+                csv_writer = csv.writer(csvfile)
+    
+                # Writing data into each row with multiple columns
+                for i in range(1):
+                    row_data = [
+                        loop_output[0],
+                        loop_output[1],
+                        loop_output[2],
+                        loop_output[3],
+                        loop_output[4],
+                        loop_output[5],p[0],p[1],p[2],p[3],p[4]
+                    ]
+                    csv_writer.writerow(row_data)
+             
 
-        pass
 
-
+fit_validate()
 # fit_model()
 # inspect_fits()
 
