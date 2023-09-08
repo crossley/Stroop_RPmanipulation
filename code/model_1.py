@@ -268,14 +268,19 @@ def inspect_validate():
 
     d = pd.read_csv("../sim/sim_output.csv")
 
-#    fig, ax = plt.subplots(2, 3, squeeze=False, figsize=(10, 6))
-#    ax[0, 0].scatter(d["v_mean"], d["v_mean_recovered"])
-#    ax[0, 1].scatter(d["v_sd"], d["v_sd_recovered"])
-#    ax[0, 2].scatter(d["a"], d["a_recovered"])
-#    ax[1, 0].scatter(d["z"], d["z_recovered"])
-#    ax[1, 1].scatter(d["ndt"], d["ndt_recovered"])
-#    plt.tight_layout()
-#    plt.show()
+    fig, ax = plt.subplots(2, 3, squeeze=False, figsize=(10, 6))
+    ax[0, 0].scatter(d["v_mean"], d["v_mean_recovered"])
+    ax[0, 0].set_title("v mean")
+    ax[0, 1].scatter(d["v_sd"], d["v_sd_recovered"])
+    ax[0, 1].set_title("v sd")
+    ax[0, 2].scatter(d["a"], d["a_recovered"])
+    ax[0, 2].set_title("a")
+    ax[1, 0].scatter(d["z"], d["z_recovered"])
+    ax[1, 0].set_title("z")
+    ax[1, 1].scatter(d["ndt"], d["ndt_recovered"])
+    ax[1, 1].set_title("ndt")
+    plt.tight_layout()
+    plt.show()
 
 # fit_validate()
 inspect_validate()
@@ -289,3 +294,12 @@ inspect_validate()
 # ndt = 200  # nondecision time
 # params = (v_mean, v_sd, a, z, ndt)
 # r_choice_obj, r_time_obj = simulate_model(params)
+
+
+#According to the DMC ?ddifusion
+#nondecision time = in seconds the typical range is 0.1 < ndt < 0.5
+#threshold = larger values indicate a conservative response. Typical range is 0.5 < a < 2
+#drift rate = typical range -5 v <5
+#sd drift rate = inter-trial-variability of drift rate. Typical range 0 < sd < 2
+#starting point = When the relative starting point z deviates from 0.5*a, the amount of information necessary for a decision differs between response alternatives. Default is 0.5*a (i.e., no bias).
+
